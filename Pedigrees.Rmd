@@ -1,0 +1,104 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-01-14"
+---
+
+```{r}
+library(readxl)
+library(dplyr)
+library(pedsuite)
+```
+
+```{r}
+include_breeders <- function(atable){
+# Include the breeders that are not in the list of mice id to the pedigree
+mice_ids <- atable %>% select(id) %>% unique()
+
+new_sires <- atable %>% filter(! fid %in% mice_ids$id) %>%
+  mutate(id = fid, fid = "", mid = "", sex = "1") %>% unique()
+
+new_dams <- atable %>% filter(! mid %in% mice_ids$id) %>%
+  mutate(id = mid, fid = "", mid = "", sex = "2") %>% unique()
+
+atable <- atable %>% bind_rows(new_sires, new_dams)
+
+return(atable)
+}
+```
+
+```{r}
+table <- read_excel("Pedigree.xlsx") %>%
+  select(-genotype) %>%
+  mutate(id=as.character(id), fid=as.character(fid),
+         mid=as.character(mid), sex=as.character(sex))
+
+# pedigree <- ped(id=table$id, fid=table$fid,
+#                 mid=table$mid, sex=table$sex)
+
+table_w_breeders <- include_breeders(table)
+
+pedigree <- ped(id=table_w_breeders$id, fid=table_w_breeders$fid,
+                mid=table_w_breeders$mid, sex=table_w_breeders$sex)
+
+plot(pedigree)
+```
+
+
+```{r}
+inb <- signif(inbreeding(pedigree), 2)
+
+plot(pedigree, cex=1, textAnnot = list(
+       topright = list(inb, cex = 0.5, col = 2, font = 2, offset = 0.1)))
+
+pdf(file="pedigree.pdf", width=10, height=4)
+plot(pedigree, cex=1, textAnnot = list(
+       topright = list(inb, cex = 0.5, col = 2, font = 2, offset = 0.1)))
+dev.off()
+
+```
+
+```{r}
+pedigree <- addChildren(pedigree, id="33*", father = "33", mother = "32")
+
+inb <- signif(inbreeding(pedigree), 2)
+plot(pedigree, cex=1, textAnnot = list(
+       topright = list(inb, cex = 0.5, col = 2, font = 2, offset = 0.01)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+pedigree <- addChildren(pedigree, id="46*", father="44", mother="A*")
+pedigree <- addChildren(pedigree, id="47*", father="43", mother="B*", sex=2)
+pedigree <- addChildren(pedigree, id="48*", father="46*", mother="47*")
+
+inb <- signif(inbreeding(pedigree), 2)
+plot(pedigree, cex=1, textAnnot = list(
+       topright = list(inb, cex = 0.5, col = 2, font = 2, offset = 0.01)))
+```
+
+```{r}
+
+```
